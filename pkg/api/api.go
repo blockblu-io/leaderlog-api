@@ -27,6 +27,7 @@ func routes(db db.DB, auth auth.Authenticator) []func(router *gin.Engine) {
 		getLeaderLogByDate(db),
 		getLeaderLogPerformance(db),
 		getAssignedBlocksBeforeNow(db),
+		getAssignedBlocksAfterNow(db),
 	}
 }
 

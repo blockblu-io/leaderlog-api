@@ -46,8 +46,8 @@ CREATE TABLE AssignedBlock (
 	slotInEpochNr INT NOT NULL,
 	timestamp Date NOT NULL,
 	status INT DEFAULT 0,
-	FOREIGN KEY (epoch) REFERENCES LeaderLog(epoch),
-	PRIMARY KEY(epoch, no)
+	PRIMARY KEY(epoch, no),
+	FOREIGN KEY (epoch) REFERENCES LeaderLog(epoch)
 );
 `
 	_, err := tx.ExecContext(ctx, sqlStmt)

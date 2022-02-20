@@ -16,6 +16,10 @@ type DB interface {
 	// GetLeaderLog gets the leader log for the given epoch.
 	GetLeaderLog(ctx context.Context, epoch uint) (*LeaderLog, error)
 
+	// GetAssignedBlocksAfterNow gets the assigned blocks that have been
+	// planned after now.
+	GetAssignedBlocksAfterNow(ctx context.Context) ([]AssignedBlock, error)
+
 	// GetAssignedBlocksBeforeNow gets the assigned blocks that
 	// have been planned before now for the given epoch.
 	GetAssignedBlocksBeforeNow(ctx context.Context, epoch uint) ([]AssignedBlock, error)
@@ -48,7 +52,7 @@ const (
 type LeaderLog struct {
 	PoolID              string
 	Epoch               uint
-	Blocks              []*AssignedBlock
+	Blocks              []AssignedBlock
 	ExpectedBlockNumber float32
 	MaxPerformance      float32
 }

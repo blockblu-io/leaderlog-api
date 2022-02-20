@@ -31,7 +31,7 @@ type LeaderLog struct {
 // ToPlain transforms this leader log object from the api package into
 // a leader log object from the db package.
 func (l *LeaderLog) ToPlain() *db.LeaderLog {
-	blocks := make([]*db.AssignedBlock, len(l.Blocks))
+	blocks := make([]db.AssignedBlock, len(l.Blocks))
 	for i, b := range l.Blocks {
 		blocks[i] = b.ToPlain()
 	}
@@ -62,8 +62,8 @@ type AssignedBlock struct {
 
 // ToPlain transforms this assigned block object from the api package
 // into the assigned block object from the db package.
-func (a *AssignedBlock) ToPlain() *db.AssignedBlock {
-	return &db.AssignedBlock{
+func (a *AssignedBlock) ToPlain() db.AssignedBlock {
+	return db.AssignedBlock{
 		No:        a.No,
 		Slot:      a.Slot,
 		EpochSlot: a.EpochSlot,
