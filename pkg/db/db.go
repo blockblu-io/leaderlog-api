@@ -3,7 +3,14 @@ package db
 import (
 	"context"
 	"errors"
-	"time"
+)
+
+// Ordering specified in which order a list shall be sorted.
+type Ordering uint
+
+const (
+	OrderingAsc  Ordering = 0
+	OrderingDesc          = 1
 )
 
 // DB is an interface to store and query leader logs as well
@@ -40,40 +47,6 @@ type DB interface {
 
 	// Close closes this database and all connections.
 	Close() error
-}
-
-type Ordering uint
-
-const (
-	OrderingAsc  Ordering = 0
-	OrderingDesc          = 1
-)
-
-type LeaderLog struct {
-	PoolID              string
-	Epoch               uint
-	Blocks              []AssignedBlock
-	ExpectedBlockNumber float32
-	MaxPerformance      float32
-}
-
-type BlockStatus uint
-
-const (
-	NotMinted        BlockStatus = 0
-	Minted                       = 1
-	DoubleAssignment             = 2
-	HeightBattle                 = 3
-	GHOSTED                      = 4
-)
-
-type AssignedBlock struct {
-	Epoch     uint
-	No        uint
-	Slot      uint
-	EpochSlot uint
-	Timestamp time.Time
-	Status    BlockStatus
 }
 
 var (
