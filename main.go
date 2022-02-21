@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/blockblu-io/leaderlog-api/pkg/api"
 	"github.com/blockblu-io/leaderlog-api/pkg/auth"
-	"github.com/blockblu-io/leaderlog-api/pkg/chain"
 	"github.com/blockblu-io/leaderlog-api/pkg/chain/blockfrost"
+	"github.com/blockblu-io/leaderlog-api/pkg/chain/syncer"
 	"github.com/blockblu-io/leaderlog-api/pkg/db/sqlite"
 	"github.com/blockblu-io/leaderlog-api/pkg/logging"
 	"os"
@@ -70,10 +70,11 @@ func main() {
 	backend, err := blockfrost.NewBlockFrostBackend()
 	handleError(err)
 
-	ctx := context.Background()
-	defer ctx.Done()
-	syncer := chain.NewSyncer(poolID, backend, sqliteDB)
-	go syncer.Run(ctx)
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
+	sync := syncer.NewSyncer(poolID, backend, sqliteDB)
+	defer sync.Close()
+	go sync.Run(ctx)
 
 	err = api.Serve(hostname, port, sqliteDB, authenticator)
 	handleError(err)
