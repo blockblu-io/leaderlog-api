@@ -44,6 +44,7 @@ INSERT INTO AssignedBlock (epoch, no, slotNr, slotInEpochNr, timestamp) VALUES (
 	if err != nil {
 		return db.WriteError
 	}
+	go l.obv.Pub(db.ObserverMessage{Code: db.ObserveNewLeaderLog, Response: leaderLog.Epoch})
 	return nil
 }
 
@@ -66,5 +67,6 @@ UPDATE AssignedBlock SET status = ? WHERE epoch = ? and no = ?;
 	if err != nil {
 		return db.WriteError
 	}
+	go l.obv.Pub(db.ObserverMessage{Code: db.ObserveUpdatedBlockStatus, Response: []uint{epoch, no}})
 	return nil
 }

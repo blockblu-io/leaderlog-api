@@ -11,7 +11,8 @@ import (
 
 // SQLiteDB is a db.DB making use of sqlite3 database.
 type SQLiteDB struct {
-	db *sql.DB
+	db  *sql.DB
+	obv *db.Observer
 }
 
 // NewSQLiteDB opens a new SQLite database. This method should only
@@ -34,7 +35,8 @@ func NewSQLiteDB(path string) (db.DB, error) {
 		}
 	}
 	return &SQLiteDB{
-		db: sqlDB,
+		db:  sqlDB,
+		obv: &db.Observer{},
 	}, nil
 }
 
@@ -60,6 +62,11 @@ func prepareFile(dbFilePath string) (bool, error) {
 	}
 }
 
+func (l *SQLiteDB) Observer() *db.Observer {
+	return l.obv
+}
+
 func (l *SQLiteDB) Close() error {
+	l.obv.Close()
 	return l.db.Close()
 }

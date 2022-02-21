@@ -17,6 +17,9 @@ const (
 // as to manage related data.
 type DB interface {
 
+	// Observer is returning a db.Observer for this db.DB instance.
+	Observer() *Observer
+
 	// GetRegisteredEpochs gets a list of all registered epochs.
 	GetRegisteredEpochs(ctx context.Context, ordering Ordering, limit uint) ([]uint, error)
 
