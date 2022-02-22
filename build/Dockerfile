@@ -12,12 +12,14 @@ FROM alpine:3.15
 
 RUN adduser -u 1402 lovelace -D
 
+USER lovelace
+
+VOLUME /var/lib/leaderlog-api
+
 LABEL maintainer="Kevin Haller <keivn.haller@blockblu.io>"
 LABEL version="${VERSION}"
 LABEL description="Lightweight API for managing leaderlog for Web access"
 
 COPY --from=builder /root/binaries/leaderlog-api /usr/local/bin
 
-USER lovelace
-
-ENTRYPOINT ["leaderlog-api"]
+ENTRYPOINT ["leaderlog-api", "-db-path", "/var/lib/leaderlog-api"]
