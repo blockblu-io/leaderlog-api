@@ -3,9 +3,10 @@ package sqlite
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/blockblu-io/leaderlog-api/pkg/db"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 // queryAndScanLeaderLogIDs queries for assigned blocks with the specified query
@@ -42,6 +43,34 @@ func (l *SQLiteDB) GetRegisteredEpochs(ctx context.Context, ordering db.Ordering
 		return nil, db.ReadError
 	}
 	return ids, nil
+}
+
+// queryAndScanAssignedBlocksWithMintedBlock queries for assigned blocks with the
+// specified query and scans the result set. If the scanning has been successful,
+// then an array of assigned blocks is returned. Otherwise, an error will be
+// returned, if the querying or the scanning fails.
+func (l *SQLiteDB) queryAndScanAssignedBlocksWithMintedBlock(ctx context.Context, query string,
+	args ...interface{}) ([]db.AssignedBlock, error) {
+	rows, err := l.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	blocks := make([]db.AssignedBlock, 0)
+	for rows.Next() {
+		block := db.AssignedBlock{}
+		mb := db.MintedBlock{}
+		err = rows.Scan(&block.Epoch, &block.No, &block.Slot, &block.EpochSlot, &block.Timestamp, &block.Status,
+			&mb.ID, &mb.Epoch, &mb.EpochSlot, &mb.Slot, &mb.Hash, &mb.Height, &mb.PoolID)
+		if err != nil {
+			return nil, err
+		}
+		if mb.ID != nil && (*mb.ID) != 0 {
+			block.RelevantBlock = &mb
+		}
+		blocks = append(blocks, block)
+	}
+	return blocks, nil
 }
 
 // queryAndScanAssignedBlocks queries for assigned blocks with the specified query
@@ -126,9 +155,11 @@ ORDER BY no ASC;
 
 func (l *SQLiteDB) GetAssignedBlocksBeforeNow(ctx context.Context, epoch uint) ([]db.AssignedBlock, error) {
 	now := time.Now()
-	blocks, err := l.queryAndScanAssignedBlocks(ctx, `
-SELECT epoch, no, slotNr, slotInEpochNr, timestamp, status FROM AssignedBlock
-WHERE epoch = ? and timestamp <= ?
+	blocks, err := l.queryAndScanAssignedBlocksWithMintedBlock(ctx, `
+SELECT a.epoch, a.no, a.slotNr, a.slotInEpochNr, a.timestamp, a.status, m.id, m.epoch, m.slotNr, m.slotInEpochNr,
+	m.hash, m.height, m.poolID
+FROM AssignedBlock a LEFT JOIN MintedBlock m on a.relevant = m.id
+WHERE a.epoch = ? and a.timestamp <= ?
 ORDER BY no ASC;
 `, epoch, now)
 	if err != nil {

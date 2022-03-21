@@ -54,6 +54,9 @@ type AssignedBlock struct {
 	Timestamp time.Time
 	// Status is the current status of this scheduled block.
 	Status BlockStatus
+	// RelevantBlock links a minted block to this assigned block,
+	// which can further explain the status of the assigned block.
+	RelevantBlock *MintedBlock
 }
 
 // MintedBlock is a block that has been persisted on the chain.
