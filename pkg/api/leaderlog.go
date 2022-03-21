@@ -34,7 +34,7 @@ func groupByDates(log *db.LeaderLog, loc *time.Location) map[time.Time][]uint {
 // blocks by their status.
 func groupByStatus(log *db.LeaderLog) map[db.BlockStatus]uint {
 	groupedStatus := make(map[db.BlockStatus]uint)
-	for i := db.NotMinted; i < db.GHOSTED; i++ {
+	for i := db.NotMinted; i <= db.GHOSTED; i++ {
 		groupedStatus[i] = 0
 	}
 	for _, block := range log.Blocks {
@@ -112,6 +112,7 @@ func getLeaderLogPerformance(idb db.DB) func(router *gin.Engine) {
 					"minted":         groupedMap[db.Minted],
 					"doubleAssigned": groupedMap[db.DoubleAssignment],
 					"heightBattle":   groupedMap[db.HeightBattle],
+					"ghosted":        groupedMap[db.GHOSTED],
 				},
 			}))
 		})
