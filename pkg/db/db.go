@@ -40,7 +40,12 @@ type DB interface {
 
 	// UpdateStatusForAssignment updates the status for the block assignment of
 	// the given epoch with the specified unique id called "no".
-	UpdateStatusForAssignment(ctx context.Context, epoch, no uint, status BlockStatus) error
+	UpdateStatusForAssignment(ctx context.Context, epoch, no uint, status BlockStatus, mintedBlockID *uint) error
+
+	// WriteMintedBlock writes the given minted block to the database
+	// and returns the ID primary key for this entry. If the writing
+	// fails, an error will be returned otherwise.
+	WriteMintedBlock(ctx context.Context, block *MintedBlock) (*uint, error)
 
 	// WriteLeaderLog writes the given list of assigned blocks
 	// for the given epoch to the DB. If a leader log has already

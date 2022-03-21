@@ -16,6 +16,11 @@ func createTables(sqlDB *sql.DB) error {
 		_ = tx.Rollback()
 		return err
 	}
+	err = createMintedBlockTable(tx, ctx)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
 	err = createAssignedBlockTable(tx, ctx)
 	if err != nil {
 		_ = tx.Rollback()
@@ -27,10 +32,26 @@ func createTables(sqlDB *sql.DB) error {
 func createLeaderLogTable(tx *sql.Tx, ctx context.Context) error {
 	sqlStmt := `
 CREATE TABLE LeaderLog (
-	epoch INT NOT NULL PRIMARY KEY,
+	epoch INTEGER NOT NULL PRIMARY KEY,
 	poolID VARCHAR(128) NOT NULL,
 	expectedBlockNr DECIMAL(8,2) NOT NULL,
-    maxPerformance DECIMAL(8,2) NOT NULL
+	maxPerformance DECIMAL(8,2) NOT NULL
+);
+`
+	_, err := tx.ExecContext(ctx, sqlStmt)
+	return err
+}
+
+func createMintedBlockTable(tx *sql.Tx, ctx context.Context) error {
+	sqlStmt := `
+CREATE TABLE MintedBlock (
+	id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	epoch INTEGER NOT NULL,
+	slotNr INTEGER NOT NULL,
+	slotInEpochNr INTEGER NOT NULL,
+	hash VARCHAR(128) NOT NULL,
+	height INTEGER NOT NULL,
+	poolID VARCHAR(128) NOT NULL
 );
 `
 	_, err := tx.ExecContext(ctx, sqlStmt)
@@ -40,14 +61,16 @@ CREATE TABLE LeaderLog (
 func createAssignedBlockTable(tx *sql.Tx, ctx context.Context) error {
 	sqlStmt := `
 CREATE TABLE AssignedBlock (
-	epoch INT NOT NULL, 
-    no INT NOT NULL,
-	slotNr INT NOT NULL,
-	slotInEpochNr INT NOT NULL,
+	epoch INTEGER NOT NULL,
+	no INTEGER NOT NULL,
+	slotNr INTEGER NOT NULL,
+	slotInEpochNr INTEGER NOT NULL,
 	timestamp Date NOT NULL,
-	status INT DEFAULT 0,
+	status INTEGER DEFAULT 0,
+	relevant INTEGER,
 	PRIMARY KEY(epoch, no),
-	FOREIGN KEY (epoch) REFERENCES LeaderLog(epoch)
+	FOREIGN KEY (epoch) REFERENCES LeaderLog(epoch) ON DELETE CASCADE,
+	FOREIGN KEY (relevant) REFERENCES MintedBlock(id) ON DELETE CASCADE
 );
 `
 	_, err := tx.ExecContext(ctx, sqlStmt)

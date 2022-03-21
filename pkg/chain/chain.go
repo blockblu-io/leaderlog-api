@@ -1,6 +1,10 @@
 package chain
 
-import "context"
+import (
+	"context"
+
+	"github.com/blockblu-io/leaderlog-api/pkg/db"
+)
 
 // StakePool is an object containing metadata information
 // about a certain pool.
@@ -31,6 +35,18 @@ type MintedBlock struct {
 	Slot uint
 	// Pool is the stake pool, which minted this block.
 	Pool StakePool
+}
+
+func (b *MintedBlock) ToDTO() *db.MintedBlock {
+	dto := db.MintedBlock{
+		Epoch:     b.Epoch,
+		EpochSlot: b.SlotInEpoch,
+		Slot:      b.Slot,
+		Hash:      b.Hash,
+		Height:    b.Height,
+		PoolID:    b.Pool.HexID,
+	}
+	return &dto
 }
 
 // Backend is an interface for querying the underlying blockchain.

@@ -2,9 +2,39 @@ package sqlite
 
 import (
 	"context"
+
 	"github.com/blockblu-io/leaderlog-api/pkg/db"
 	log "github.com/sirupsen/logrus"
 )
+
+func (l *SQLiteDB) WriteMintedBlock(ctx context.Context, block *db.MintedBlock) (*uint, error) {
+	tx, err := l.db.BeginTx(ctx, nil)
+	if err != nil {
+		log.Errorf("couldn't start a transaction to write the minted block with hash '%s': %s", block.Hash,
+			err.Error())
+		return nil, db.WriteError
+	}
+	result, err := tx.Exec(`
+	INSERT INTO MintedBlock (epoch, slotNr, slotInEpochNr, hash, height, poolID) VALUES (?, ?, ?, ?, ?, ?)
+	`, block.Epoch, block.Slot, block.EpochSlot, block.Hash, block.Height, block.PoolID)
+	if err != nil {
+		_ = tx.Rollback()
+		log.Errorf("inserting minted block with hash '%s' failed: %s", block.Hash, err.Error())
+		return nil, db.WriteError
+	}
+	blockId, err := result.LastInsertId()
+	if err != nil {
+		_ = tx.Rollback()
+		log.Errorf("getting the ID of inserted minted block with hash '%s' failed: %s", block.Hash, err.Error())
+		return nil, db.WriteError
+	}
+	err = tx.Commit()
+	if err != nil {
+		return nil, db.WriteError
+	}
+	b := uint(blockId)
+	return &b, nil
+}
 
 func (l *SQLiteDB) WriteLeaderLog(ctx context.Context, leaderLog *db.LeaderLog) error {
 	tx, err := l.db.BeginTx(ctx, nil)
@@ -48,7 +78,8 @@ INSERT INTO AssignedBlock (epoch, no, slotNr, slotInEpochNr, timestamp) VALUES (
 	return nil
 }
 
-func (l *SQLiteDB) UpdateStatusForAssignment(ctx context.Context, epoch, no uint, status db.BlockStatus) error {
+func (l *SQLiteDB) UpdateStatusForAssignment(ctx context.Context, epoch, no uint, status db.BlockStatus,
+	mintedBlockID *uint) error {
 	tx, err := l.db.BeginTx(ctx, nil)
 	if err != nil {
 		log.Errorf("couldn't start a transaction to update status of block (%d,%d): %s", epoch, no,
@@ -56,8 +87,8 @@ func (l *SQLiteDB) UpdateStatusForAssignment(ctx context.Context, epoch, no uint
 		return db.WriteError
 	}
 	_, err = tx.ExecContext(ctx, `
-UPDATE AssignedBlock SET status = ? WHERE epoch = ? and no = ?;
-`, status, epoch, no)
+UPDATE AssignedBlock SET status = ?, relevant = ? WHERE epoch = ? and no = ?;
+`, status, mintedBlockID, epoch, no)
 	if err != nil {
 		_ = tx.Rollback()
 		log.Errorf("setting the status=%v of block (%d,%d) failed: %s", status, epoch, no, err.Error())

@@ -55,3 +55,25 @@ type AssignedBlock struct {
 	// Status is the current status of this scheduled block.
 	Status BlockStatus
 }
+
+// MintedBlock is a block that has been persisted on the chain.
+type MintedBlock struct {
+	// ID is an unique identifier of the minted block entry in
+	// the database.
+	ID *uint
+	// Epoch in which the block has been minted.
+	Epoch uint
+	// EpochSlot is the slot number in which the block has been
+	// minted. The number is counted from the start of the epoch.
+	EpochSlot uint
+	// Slot is the slot number in which the block has been
+	// minted. The number is counted from the chain`s inception.
+	Slot uint
+	// Hash is the hash string in hex format for the minted block.
+	Hash string
+	// Height of this minted block.
+	Height uint
+	// PoolID is the unique identifier of the pool that minted the
+	// block. It is represented in hex format.
+	PoolID string
+}

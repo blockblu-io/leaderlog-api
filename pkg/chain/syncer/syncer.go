@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+
 	"github.com/blockblu-io/leaderlog-api/pkg/chain"
 	"github.com/blockblu-io/leaderlog-api/pkg/db"
 	log "github.com/sirupsen/logrus"
@@ -67,11 +68,18 @@ func (s *Syncer) Run(ctx context.Context) {
 func (s *Syncer) processBlock(ctx context.Context, block db.AssignedBlock) {
 	log.Infof("processing block at (%d,%d) with no=%d for pool-id=%s", block.Epoch, block.EpochSlot,
 		block.No, s.poolID)
-	status, _, err := s.getStatusOfBlock(ctx, block.Slot)
+	status, mintedBlock, err := s.getStatusOfBlock(ctx, block.Slot)
 	if err != nil {
 		return
 	}
-	err = s.db.UpdateStatusForAssignment(ctx, block.Epoch, block.No, status)
+	var mintedBlockID *uint
+	if mintedBlock != nil {
+		mintedBlockID, err = s.db.WriteMintedBlock(ctx, mintedBlock.ToDTO())
+		if err != nil {
+			return
+		}
+	}
+	err = s.db.UpdateStatusForAssignment(ctx, block.Epoch, block.No, status, mintedBlockID)
 	if err != nil {
 		log.Errorf("couldn't update the status for block (%d,%d): %s", block.Epoch, block.No, err.Error())
 	}
