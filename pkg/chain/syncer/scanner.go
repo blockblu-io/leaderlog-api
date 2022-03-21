@@ -2,10 +2,11 @@ package syncer
 
 import (
 	"context"
-	"github.com/blockblu-io/leaderlog-api/pkg/db"
-	log "github.com/sirupsen/logrus"
 	"math"
 	"time"
+
+	"github.com/blockblu-io/leaderlog-api/pkg/db"
+	log "github.com/sirupsen/logrus"
 )
 
 type Scanner struct {
@@ -52,8 +53,7 @@ func (sc *Scanner) scanPastBlocks(ctx context.Context) {
 			log.Errorf("couldn't scan the unsynced blcoks: %s", err.Error())
 			return
 		}
-		n += len(blocks)
-		log.Infof("found [%d] non-updated blocks", n)
+		n += sc.syncer.pastBlockChan.bufferSize
 		for _, block := range blocks {
 			sc.syncer.pastBlockChan.blocks <- block
 		}

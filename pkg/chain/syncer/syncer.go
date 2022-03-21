@@ -39,7 +39,7 @@ func NewSyncer(poolID string, backend chain.Backend, idb db.DB) *Syncer {
 		db:      idb,
 		pastBlockChan: syncChannel{
 			blocks:     blockChannel,
-			bufferSize: 5,
+			bufferSize: 500,
 		},
 	}
 }
