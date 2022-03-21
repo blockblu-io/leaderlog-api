@@ -2,13 +2,14 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/blockblu-io/leaderlog-api/pkg/api/dto"
 	"github.com/blockblu-io/leaderlog-api/pkg/auth"
 	"github.com/blockblu-io/leaderlog-api/pkg/db"
 	"github.com/gin-gonic/gin"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 // groupByDates takes a look at the given leader log and groups the assigned
@@ -119,8 +120,8 @@ func getLeaderLogPerformance(idb db.DB) func(router *gin.Engine) {
 
 func getLeaderLogByDate(db db.DB) func(router *gin.Engine) {
 	return func(router *gin.Engine) {
-		router.GET(getPath("epoch/:epoch/by/date/:location"), func(c *gin.Context) {
-			loc, err := time.LoadLocation(c.Param("location"))
+		router.GET(getPath("epoch/:epoch/by/date"), func(c *gin.Context) {
+			loc, err := time.LoadLocation(c.Query("tz"))
 			if err != nil {
 				c.JSON(400, errorPayload(err.Error()))
 				return
