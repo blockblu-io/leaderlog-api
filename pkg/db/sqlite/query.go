@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -59,14 +60,28 @@ func (l *SQLiteDB) queryAndScanAssignedBlocksWithMintedBlock(ctx context.Context
 	blocks := make([]db.AssignedBlock, 0)
 	for rows.Next() {
 		block := db.AssignedBlock{}
-		mb := db.MintedBlock{}
+		var id, epoch, epochSlot, slot, height sql.NullInt64
+		var hash, poolID sql.NullString
 		err = rows.Scan(&block.Epoch, &block.No, &block.Slot, &block.EpochSlot, &block.Timestamp, &block.Status,
-			&mb.ID, &mb.Epoch, &mb.EpochSlot, &mb.Slot, &mb.Hash, &mb.Height, &mb.PoolID)
+			&id, &epoch, &epochSlot, &slot, &hash, &height, &poolID)
 		if err != nil {
 			return nil, err
 		}
-		if mb.ID != nil && (*mb.ID) != 0 {
-			block.RelevantBlock = &mb
+		if id.Valid {
+			mID := uint(id.Int64)
+			mEpoch := uint(epoch.Int64)
+			mEpochSlot := uint(epochSlot.Int64)
+			mSlot := uint(slot.Int64)
+			mHeight := uint(height.Int64)
+			block.RelevantBlock = &db.MintedBlock{
+				ID:        &mID,
+				Epoch:     mEpoch,
+				EpochSlot: mEpochSlot,
+				Slot:      mSlot,
+				Hash:      hash.String,
+				Height:    mHeight,
+				PoolID:    poolID.String,
+			}
 		}
 		blocks = append(blocks, block)
 	}
