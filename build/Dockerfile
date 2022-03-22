@@ -1,16 +1,20 @@
-FROM golang:1.17-alpine3.15 AS builder
+FROM golang:1.18-bullseye AS builder
 
-RUN apk add build-base
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+    && rm -rf /var/lib/apt/lists/*
+    
 
 COPY . /root/src
 WORKDIR /root/src
-RUN mkdir /root/binaries && \
-    go mod vendor && \
-    go build -o /root/binaries/leaderlog-api .
+RUN mkdir /root/binaries \
+    && go mod vendor \
+    && go build -o /root/binaries/leaderlog-api .
 
-FROM alpine:3.15
+FROM debian:bullseye
 
-RUN adduser -u 1402 lovelace -D
+RUN adduser -u 1402 lovelace --disabled-password --gecos ""
 
 USER lovelace
 
