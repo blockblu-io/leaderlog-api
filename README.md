@@ -53,7 +53,8 @@ mechanism. The usernamecorresponds to `BLU_AUTH_USERNAME` and the password to
 `BLU_AUTH_PASSWORD`.
 
 ```bash
-$ curl --user username:password -X POST -H "Content-Type: application/json" -d @leaderlog.json "http://localhost:9001/leaderlog"
+$ curl --user username:password -X POST -H "Content-Type: application/json" \
+    -d @leaderlog.json "http://localhost:9001/leaderlog"
 ```
 
 ### Get Registered Epochs
