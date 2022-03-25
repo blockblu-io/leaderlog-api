@@ -33,9 +33,9 @@ func createLeaderLogTable(tx *sql.Tx, ctx context.Context) error {
 	sqlStmt := `
 CREATE TABLE LeaderLog (
 	epoch INTEGER NOT NULL PRIMARY KEY,
-	poolID VARCHAR(128) NOT NULL,
-	expectedBlockNr DECIMAL(8,2) NOT NULL,
-	maxPerformance DECIMAL(8,2) NOT NULL
+	poolID TEXT NOT NULL,
+	expectedBlockNr REAL NOT NULL,
+	maxPerformance REAL NOT NULL
 );
 `
 	_, err := tx.ExecContext(ctx, sqlStmt)
@@ -49,9 +49,9 @@ CREATE TABLE MintedBlock (
 	epoch INTEGER NOT NULL,
 	slotNr INTEGER NOT NULL,
 	slotInEpochNr INTEGER NOT NULL,
-	hash VARCHAR(128) NOT NULL,
+	hash TEXT NOT NULL,
 	height INTEGER NOT NULL,
-	poolID VARCHAR(128) NOT NULL
+	poolID TEXT NOT NULL
 );
 `
 	_, err := tx.ExecContext(ctx, sqlStmt)
@@ -65,7 +65,7 @@ CREATE TABLE AssignedBlock (
 	no INTEGER NOT NULL,
 	slotNr INTEGER NOT NULL,
 	slotInEpochNr INTEGER NOT NULL,
-	timestamp Date NOT NULL,
+	timestamp INTEGER NOT NULL,
 	status INTEGER DEFAULT 0,
 	relevant INTEGER,
 	PRIMARY KEY(epoch, no),

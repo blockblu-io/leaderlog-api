@@ -60,13 +60,15 @@ func (l *SQLiteDB) queryAndScanAssignedBlocksWithMintedBlock(ctx context.Context
 	blocks := make([]db.AssignedBlock, 0)
 	for rows.Next() {
 		block := db.AssignedBlock{}
+		var unixTimestamp int64
 		var id, epoch, epochSlot, slot, height sql.NullInt64
 		var hash, poolID sql.NullString
-		err = rows.Scan(&block.Epoch, &block.No, &block.Slot, &block.EpochSlot, &block.Timestamp, &block.Status,
+		err = rows.Scan(&block.Epoch, &block.No, &block.Slot, &block.EpochSlot, &unixTimestamp, &block.Status,
 			&id, &epoch, &epochSlot, &slot, &hash, &height, &poolID)
 		if err != nil {
 			return nil, err
 		}
+		block.Timestamp = time.Unix(unixTimestamp, 0)
 		if id.Valid {
 			mID := uint(id.Int64)
 			mEpoch := uint(epoch.Int64)
@@ -102,10 +104,12 @@ func (l *SQLiteDB) queryAndScanAssignedBlocks(ctx context.Context, query string,
 	blocks := make([]db.AssignedBlock, 0)
 	for rows.Next() {
 		block := db.AssignedBlock{}
-		err = rows.Scan(&block.Epoch, &block.No, &block.Slot, &block.EpochSlot, &block.Timestamp, &block.Status)
+		var unixTimestamp int64
+		err = rows.Scan(&block.Epoch, &block.No, &block.Slot, &block.EpochSlot, &unixTimestamp, &block.Status)
 		if err != nil {
 			return nil, err
 		}
+		block.Timestamp = time.Unix(unixTimestamp, 0)
 		blocks = append(blocks, block)
 	}
 	return blocks, nil
@@ -160,7 +164,7 @@ func (l *SQLiteDB) GetAssignedBlocksAfterNow(ctx context.Context) ([]db.Assigned
 SELECT epoch, no, slotNr, slotInEpochNr, timestamp, status FROM AssignedBlock
 WHERE timestamp > ?
 ORDER BY no ASC;
-`, now)
+`, now.Unix())
 	if err != nil {
 		log.Errorf("querying the blocks after now=%v failed: %s", now, err.Error())
 		return nil, db.ReadError
@@ -176,7 +180,7 @@ SELECT a.epoch, a.no, a.slotNr, a.slotInEpochNr, a.timestamp, a.status, m.id, m.
 FROM AssignedBlock a LEFT JOIN MintedBlock m on a.relevant = m.id
 WHERE a.epoch = ? and a.timestamp <= ?
 ORDER BY no ASC;
-`, epoch, now)
+`, epoch, now.Unix())
 	if err != nil {
 		log.Errorf("querying the blocks of epoch=%d before now=%v failed: %s", epoch, now, err.Error())
 		return nil, db.ReadError
@@ -193,7 +197,7 @@ WHERE timestamp <= ? and status = ?
 ORDER BY timestamp ASC
 LIMIT ?
 OFFSET ?;
-`, now, status, limit, offset)
+`, now.Unix(), status, limit, offset)
 	if err != nil {
 		log.Errorf("querying the blocks (%d,%d) with status=%d before now=%v failed: %s", offset, limit, status,
 			now, err.Error())

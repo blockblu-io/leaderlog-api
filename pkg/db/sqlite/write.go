@@ -62,7 +62,7 @@ INSERT INTO AssignedBlock (epoch, no, slotNr, slotInEpochNr, timestamp) VALUES (
 	}
 	for _, block := range leaderLog.Blocks {
 		_, err = insertAssignmentStmt.ExecContext(ctx, leaderLog.Epoch, block.No, block.Slot, block.EpochSlot,
-			block.Timestamp)
+			block.Timestamp.Unix())
 		if err != nil {
 			_ = tx.Rollback()
 			log.Errorf("assigned block insertion for epoch '%d' failed: %s", leaderLog.Epoch,
