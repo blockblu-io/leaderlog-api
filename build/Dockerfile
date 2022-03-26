@@ -16,6 +16,12 @@ FROM debian:bullseye
 
 RUN adduser -u 1402 lovelace --disabled-password --gecos ""
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        netbase \
+    && rm -rf /var/lib/apt/lists/*
+
 USER lovelace
 
 VOLUME /var/lib/leaderlog-api
