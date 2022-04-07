@@ -2,9 +2,9 @@ package api
 
 import (
 	"fmt"
+	"github.com/blockblu-io/leaderlog-api/internal/logging"
 	"github.com/blockblu-io/leaderlog-api/pkg/auth"
 	"github.com/blockblu-io/leaderlog-api/pkg/db"
-	"github.com/blockblu-io/leaderlog-api/pkg/logging"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
