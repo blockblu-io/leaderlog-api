@@ -1,36 +1,35 @@
 pipeline {
     agent { label 'docker' }
     parameters {
-        string(name: "version", description: "Version of leaderlog-api")
-        string(name: "tag", description: "Tag of leaderlog-api container")
+        string(name: "tag", description: "Tag of commit that shall be compiled")
     }
 
     stages {
         stage('Build') {
             parallel{
-                stage('Build Linux/AMD64') {
+                stage('Build Linux / AMD64') {
                     agent { label 'linux && amd64 && docker' }
                     steps {
                         git branch: 'main',
                             credentialsId: 'github-sobitada',
                             url: 'git@github.com:blockblu-io/leaderlog-api.git'
-                        sh "git checkout ${version}"
+                        sh "git checkout ${tag}"
                         script {
-                            docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-blockblu') {
+                            docker.withRegistry('', 'dockerhub-blockblu') {
                                 docker.build("blockblu/leaderlog-api:${tag}_amd64", "--platform linux/amd64 -f build/Dockerfile .").push()
                             }
                         }
                     }
                 }
-                stage('Build Linux/ARM64') {
+                stage('Build Linux / ARM64') {
                     agent { label 'linux && arm64 && docker' }
                     steps {
                         git branch: 'main',
                             credentialsId: 'github-sobitada',
                             url: 'git@github.com:blockblu-io/leaderlog-api.git'
-                        sh "git checkout ${version}"
+                        sh "git checkout ${tag}"
                         script {
-                            docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-blockblu') {
+                            docker.withRegistry('', 'dockerhub-blockblu') {
                                 docker.build("blockblu/leaderlog-api:${tag}_arm64", "--platform linux/arm64/v8 -f build/Dockerfile .").push()
                             }
                         }
@@ -42,7 +41,7 @@ pipeline {
             agent { label 'linux && docker' }
             steps {
                 script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-blockblu') {
+                    docker.withRegistry('', 'dockerhub-blockblu') {
                         sh "docker manifest create blockblu/leaderlog-api:${tag} blockblu/leaderlog-api:${tag}_amd64 blockblu/leaderlog-api:${tag}_arm64"
                         sh "docker manifest push --purge blockblu/leaderlog-api:${tag}"
                     }
