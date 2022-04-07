@@ -8,39 +8,26 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Syncer is a service, which scans for blocks that
-// are planned for the past and their status is still
-// db.NotMinted. Moreover, it queries to chain to check
+// Syncer is a service, which scans for blocks that are planned for the past and
+// their status is still db.NotMinted. Moreover, it queries to chain to check
 // for the correct status and store it in the db.DB.
 type Syncer struct {
 	poolID        string
 	backend       chain.Backend
 	db            db.DB
-	pastBlockChan syncChannel
+	pastBlockChan chan db.AssignedBlock
 }
 
-// syncChannel is a buffered channel that contains all
-// assigned blocks for which the status has to be updated.
-type syncChannel struct {
-	blocks     chan db.AssignedBlock
-	lastSlot   uint
-	bufferSize int
-}
-
-// NewSyncer is creating a new Syncer for the pool with the given ID
-// in hex format. The given backend is used for querying the chain, and
-// the given db.DB is used to query as well as update the blocks and their
-// status
+// NewSyncer is creating a new Syncer for the pool with the given ID in hex
+// format. The given backend is used for querying the chain, and the given db.DB
+// is used to query as well as update the blocks and their status.
 func NewSyncer(poolID string, backend chain.Backend, idb db.DB) *Syncer {
-	blockChannel := make(chan db.AssignedBlock, 5)
+	blockChannel := make(chan db.AssignedBlock)
 	return &Syncer{
-		poolID:  poolID,
-		backend: backend,
-		db:      idb,
-		pastBlockChan: syncChannel{
-			blocks:     blockChannel,
-			bufferSize: 500,
-		},
+		poolID:        poolID,
+		backend:       backend,
+		db:            idb,
+		pastBlockChan: blockChannel,
 	}
 }
 
@@ -51,11 +38,8 @@ func (s *Syncer) Run(ctx context.Context) {
 	go scanner.Run(ctx)
 	for {
 		select {
-		case b := <-s.pastBlockChan.blocks:
-			if b.Slot >= s.pastBlockChan.lastSlot {
-				s.processBlock(ctx, b)
-				s.pastBlockChan.lastSlot = b.Slot
-			}
+		case b := <-s.pastBlockChan:
+			go s.processBlock(ctx, b)
 			break
 		case <-ctx.Done():
 			return
@@ -63,11 +47,11 @@ func (s *Syncer) Run(ctx context.Context) {
 	}
 }
 
-// processBlock gathers the status of the assigned block and updates the
-// status in the database.
+// processBlock gathers the status of the assigned block and updates the status
+// in the database.
 func (s *Syncer) processBlock(ctx context.Context, block db.AssignedBlock) {
-	log.Infof("processing block at (%d,%d) with no=%d for pool-id=%s", block.Epoch, block.EpochSlot,
-		block.No, s.poolID)
+	log.Infof("processing block at (%d,%d) with no=%d for pool-id=%s",
+		block.Epoch, block.EpochSlot, block.No, s.poolID)
 	status, mintedBlock, err := s.getStatusOfBlock(ctx, block.Slot)
 	if err != nil {
 		return
@@ -79,9 +63,11 @@ func (s *Syncer) processBlock(ctx context.Context, block db.AssignedBlock) {
 			return
 		}
 	}
-	err = s.db.UpdateStatusForAssignment(ctx, block.Epoch, block.No, status, mintedBlockID)
+	err = s.db.UpdateStatusForAssignment(ctx, block.Epoch, block.No, status,
+		mintedBlockID)
 	if err != nil {
-		log.Errorf("couldn't update the status for block (%d,%d): %s", block.Epoch, block.No, err.Error())
+		log.Errorf("couldn't update the status for block (%d,%d): %s",
+			block.Epoch, block.No, err.Error())
 	}
 }
 
@@ -93,7 +79,9 @@ func (s *Syncer) processBlock(ctx context.Context, block db.AssignedBlock) {
 //
 // An error will be returned, if the slot and neighbourhood couldn't be scanned
 // correctly.
-func (s *Syncer) getStatusOfBlock(ctx context.Context, slot uint) (db.BlockStatus, *chain.MintedBlock, error) {
+func (s *Syncer) getStatusOfBlock(ctx context.Context,
+	slot uint) (db.BlockStatus, *chain.MintedBlock, error) {
+
 	mintedBlock, err := s.backend.GetMintedBlock(ctx, slot)
 	if err != nil {
 		return 0, nil, err
@@ -117,5 +105,5 @@ func (s *Syncer) getStatusOfBlock(ctx context.Context, slot uint) (db.BlockStatu
 
 // Close is closing this syncer.
 func (s *Syncer) Close() {
-	close(s.pastBlockChan.blocks)
+	close(s.pastBlockChan)
 }
