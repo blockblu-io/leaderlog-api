@@ -47,23 +47,29 @@ func groupByStatus(log *db.LeaderLog) map[db.BlockStatus]uint {
 	return groupedStatus
 }
 
-func computeMaxPerformance(expectedBlockNumber float32, statusMap map[db.BlockStatus]uint) float64 {
-	return float64(statusMap[db.Minted]+statusMap[db.NotMinted]) / float64(expectedBlockNumber)
+func computeMaxPerformance(expectedBlockNumber float32,
+	statusMap map[db.BlockStatus]uint) float64 {
+
+	val := statusMap[db.Minted] + statusMap[db.NotMinted]
+	return float64(val) / float64(expectedBlockNumber)
 }
 
 func handleLeaderLogFetching(db db.DB, c *gin.Context) (*db.LeaderLog, error) {
 	epoch, err := strconv.Atoi(c.Param("epoch"))
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, errorPayload("epoch couldn't be parsed"))
+		c.AbortWithStatusJSON(http.StatusBadRequest,
+			errorPayload("epoch couldn't be parsed"))
 		return nil, err
 	}
 	log, err := db.GetLeaderLog(c, uint(epoch))
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, errorPayload(err.Error()))
+		c.AbortWithStatusJSON(http.StatusInternalServerError,
+			errorPayload(err.Error()))
 		return nil, err
 	}
 	if log == nil {
-		c.AbortWithStatusJSON(http.StatusNotFound, errorPayload("no log for epoch could be found"))
+		c.AbortWithStatusJSON(http.StatusNotFound,
+			errorPayload("no log for epoch could be found"))
 		return nil, fmt.Errorf("couldn't find a log for this epoch")
 	}
 	return log, nil
@@ -85,7 +91,8 @@ func getRegisteredEpochs(idb db.DB) func(router *gin.Engine) {
 			}
 			epochs, err := idb.GetRegisteredEpochs(c, db.OrderingDesc, limit)
 			if err != nil {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, errorPayload(err.Error()))
+				c.AbortWithStatusJSON(http.StatusInternalServerError,
+					errorPayload(err.Error()))
 				return
 			}
 			c.JSON(200, okPayload(epochs))
@@ -95,44 +102,46 @@ func getRegisteredEpochs(idb db.DB) func(router *gin.Engine) {
 
 func getLeaderLogPerformance(idb db.DB) func(router *gin.Engine) {
 	return func(router *gin.Engine) {
-		router.GET(getPath("epoch/:epoch/performance"), func(c *gin.Context) {
-			log, err := handleLeaderLogFetching(idb, c)
-			if err != nil {
-				return
-			}
-			groupedMap := groupByStatus(log)
-			assignedBlock := len(log.Blocks)
-			c.JSON(200, okPayload(gin.H{
-				"epoch":               log.Epoch,
-				"assignedBlocks":      assignedBlock,
-				"expectedBlockNumber": log.ExpectedBlockNumber,
-				"maxPerformance":      computeMaxPerformance(log.ExpectedBlockNumber, groupedMap),
-				"status": gin.H{
-					"notMinted":      groupedMap[db.NotMinted],
-					"minted":         groupedMap[db.Minted],
-					"doubleAssigned": groupedMap[db.DoubleAssignment],
-					"heightBattle":   groupedMap[db.HeightBattle],
-					"ghosted":        groupedMap[db.GHOSTED],
-				},
-			}))
-		})
+		router.GET(getPath("epoch/:epoch/performance"),
+			func(c *gin.Context) {
+				log, err := handleLeaderLogFetching(idb, c)
+				if err != nil {
+					return
+				}
+				groupedMap := groupByStatus(log)
+				assignedBlock := len(log.Blocks)
+				c.JSON(200, okPayload(gin.H{
+					"epoch":               log.Epoch,
+					"assignedBlocks":      assignedBlock,
+					"expectedBlockNumber": log.ExpectedBlockNumber,
+					"maxPerformance":      computeMaxPerformance(log.ExpectedBlockNumber, groupedMap),
+					"status": gin.H{
+						"notMinted":      groupedMap[db.NotMinted],
+						"minted":         groupedMap[db.Minted],
+						"doubleAssigned": groupedMap[db.DoubleAssignment],
+						"heightBattle":   groupedMap[db.HeightBattle],
+						"ghosted":        groupedMap[db.GHOSTED],
+					},
+				}))
+			})
 	}
 }
 
 func getLeaderLogByDate(db db.DB) func(router *gin.Engine) {
 	return func(router *gin.Engine) {
-		router.GET(getPath("epoch/:epoch/by/date"), func(c *gin.Context) {
-			loc, err := time.LoadLocation(c.Query("tz"))
-			if err != nil {
-				c.JSON(400, errorPayload(err.Error()))
-				return
-			}
-			log, err := handleLeaderLogFetching(db, c)
-			if err != nil {
-				return
-			}
-			c.JSON(200, okPayload(groupByDates(log, loc)))
-		})
+		router.GET(getPath("epoch/:epoch/by/date"),
+			func(c *gin.Context) {
+				loc, err := time.LoadLocation(c.Query("tz"))
+				if err != nil {
+					c.JSON(400, errorPayload(err.Error()))
+					return
+				}
+				log, err := handleLeaderLogFetching(db, c)
+				if err != nil {
+					return
+				}
+				c.JSON(200, okPayload(groupByDates(log, loc)))
+			})
 	}
 }
 
@@ -150,15 +159,18 @@ func postLeaderLog(db db.DB, auth auth.Authenticator) func(router *gin.Engine) {
 			log, err := dto.ParseLeaderLog(reader)
 			if err != nil {
 				if err == dto.ParsingError {
-					c.AbortWithStatusJSON(http.StatusBadRequest, errorPayload(err.Error()))
+					c.AbortWithStatusJSON(http.StatusBadRequest,
+						errorPayload(err.Error()))
 				} else {
-					c.AbortWithStatusJSON(http.StatusInternalServerError, errorPayload(err.Error()))
+					c.AbortWithStatusJSON(http.StatusInternalServerError,
+						errorPayload(err.Error()))
 				}
 				return
 			}
 			err = db.WriteLeaderLog(c, log.ToPlain())
 			if err != nil {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, errorPayload(err.Error()))
+				c.AbortWithStatusJSON(http.StatusInternalServerError,
+					errorPayload(err.Error()))
 			} else {
 				c.JSON(200, okPayload(nil))
 			}
