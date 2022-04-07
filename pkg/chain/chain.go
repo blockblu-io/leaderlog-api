@@ -17,9 +17,7 @@ type StakePool struct {
 	HexID string
 }
 
-// MintedBlock is an object containing information about
-// a minted block.
-type MintedBlock struct {
+type Tip struct {
 	// Height is the height number of this block.
 	Height uint
 	// Hash is the unique hash of this block.
@@ -33,6 +31,15 @@ type MintedBlock struct {
 	// but the slot number is counted from the inception of
 	// the chain.
 	Slot uint
+	// Timestamp is the Unix timestamp in seconds of the time at
+	// which this block has been minted.
+	Timestamp uint
+}
+
+// MintedBlock is an object containing information about
+// a minted block.
+type MintedBlock struct {
+	Tip
 	// Pool is the stake pool, which minted this block.
 	Pool StakePool
 }
@@ -54,6 +61,12 @@ type Backend interface {
 
 	// Name returns the name of this backend.
 	Name() string
+
+	// GetLatestBlock queries for the latest minted block (i.e. the tip of the
+	// chain).
+	//
+	// If querying the chain failed, an error will be returned instead.
+	GetLatestBlock(ctx context.Context) (*Tip, error)
 
 	// GetMintedBlock queries the chain looking at the given slot. If a block
 	// has been minted for the given slot, then the minted block will be returned.

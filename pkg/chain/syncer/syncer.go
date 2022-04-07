@@ -2,10 +2,10 @@ package syncer
 
 import (
 	"context"
-
 	"github.com/blockblu-io/leaderlog-api/pkg/chain"
 	"github.com/blockblu-io/leaderlog-api/pkg/db"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 // Syncer is a service, which scans for blocks that are planned for the past and
@@ -15,6 +15,7 @@ type Syncer struct {
 	poolID        string
 	backend       chain.Backend
 	db            db.DB
+	tipUpdater    *TipUpdater
 	pastBlockChan chan db.AssignedBlock
 }
 
@@ -22,11 +23,13 @@ type Syncer struct {
 // format. The given backend is used for querying the chain, and the given db.DB
 // is used to query as well as update the blocks and their status.
 func NewSyncer(poolID string, backend chain.Backend, idb db.DB) *Syncer {
+	tu := NewTipUpdater()
 	blockChannel := make(chan db.AssignedBlock)
 	return &Syncer{
 		poolID:        poolID,
 		backend:       backend,
 		db:            idb,
+		tipUpdater:    tu,
 		pastBlockChan: blockChannel,
 	}
 }
@@ -35,6 +38,7 @@ func NewSyncer(poolID string, backend chain.Backend, idb db.DB) *Syncer {
 func (s *Syncer) Run(ctx context.Context) {
 	log.Infof("started to sync blocks using '%s'", s.backend.Name())
 	scanner := s.NewScanner()
+	go s.tipUpdater.Run(ctx, s.backend)
 	go scanner.Run(ctx)
 	for {
 		select {
@@ -50,6 +54,21 @@ func (s *Syncer) Run(ctx context.Context) {
 // processBlock gathers the status of the assigned block and updates the status
 // in the database.
 func (s *Syncer) processBlock(ctx context.Context, block db.AssignedBlock) {
+	for {
+		tip := s.tipUpdater.GetTip()
+		if tip != nil {
+			diff := time.Unix(int64(tip.Timestamp), 0).Sub(block.Timestamp)
+			if diff > 3*time.Minute {
+				break
+			}
+		}
+		select {
+		case <-s.tipUpdater.UpdateC:
+			break
+		case <-ctx.Done():
+			return
+		}
+	}
 	log.Infof("processing block at (%d,%d) with no=%d for pool-id=%s",
 		block.Epoch, block.EpochSlot, block.No, s.poolID)
 	status, mintedBlock, err := s.getStatusOfBlock(ctx, block.Slot)
