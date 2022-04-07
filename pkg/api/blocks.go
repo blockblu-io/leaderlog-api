@@ -24,16 +24,3 @@ func getAssignedBlocksBeforeNow(idb db.DB) func(router *gin.Engine) {
 		})
 	}
 }
-
-func getAssignedBlocksAfterNow(idb db.DB) func(router *gin.Engine) {
-	return func(router *gin.Engine) {
-		router.GET(getPath("blocks/after/now"), func(c *gin.Context) {
-			blocks, err := idb.GetAssignedBlocksAfterNow(c)
-			if err != nil {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, errorPayload(err.Error()))
-				return
-			}
-			c.JSON(200, okPayload(blocks))
-		})
-	}
-}
