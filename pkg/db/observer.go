@@ -24,16 +24,16 @@ type Observer struct {
 	lock     sync.Mutex
 }
 
-// Sub subscribes the given channel to get notification, when the
-// db.DB got updated.
+// Sub subscribes the given channel to get notification, when the db.DB got
+// updated.
 func (obv *Observer) Sub(c chan<- ObserverMessage) {
 	obv.lock.Lock()
 	defer obv.lock.Unlock()
 	obv.channels = append(obv.channels, c)
 }
 
-// Pub publishes the given message, which is distributed over all
-// subscribed channels.
+// Pub publishes the given message, which is distributed over all subscribed
+// channels.
 func (obv *Observer) Pub(msg ObserverMessage) {
 	obv.lock.Lock()
 	defer obv.lock.Unlock()

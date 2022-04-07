@@ -2,12 +2,10 @@ package chain
 
 import (
 	"context"
-
 	"github.com/blockblu-io/leaderlog-api/pkg/db"
 )
 
-// StakePool is an object containing metadata information
-// about a certain pool.
+// StakePool is an object containing metadata information about a certain pool.
 type StakePool struct {
 	// Ticker is the short pool name.
 	Ticker string
@@ -27,17 +25,15 @@ type Tip struct {
 	// SlotInEpoch is the slot in the epoch in which the
 	// block has been minted.
 	SlotInEpoch uint
-	// Slot is the slot in which the block has been minted,
-	// but the slot number is counted from the inception of
-	// the chain.
+	// Slot is the slot in which the block has been minted, but the slot number
+	// is counted from the inception of the chain.
 	Slot uint
-	// Timestamp is the Unix timestamp in seconds of the time at
-	// which this block has been minted.
+	// Timestamp is the Unix timestamp in seconds of the time at which this
+	// block has been minted.
 	Timestamp uint
 }
 
-// MintedBlock is an object containing information about
-// a minted block.
+// MintedBlock is an object containing information about a minted block.
 type MintedBlock struct {
 	Tip
 	// Pool is the stake pool, which minted this block.
@@ -69,8 +65,8 @@ type Backend interface {
 	GetLatestBlock(ctx context.Context) (*Tip, error)
 
 	// GetMintedBlock queries the chain looking at the given slot. If a block
-	// has been minted for the given slot, then the minted block will be returned.
-	// Otherwise, nil will be returned.
+	// has been minted for the given slot, then the minted block will be
+	// returned. Otherwise, nil will be returned.
 	//
 	// If querying the chain failed, an error will be returned instead.
 	GetMintedBlock(ctx context.Context, slot uint) (*MintedBlock, error)
@@ -82,5 +78,6 @@ type Backend interface {
 	// slots in both direction will be investigated.
 	//
 	// If querying the chain failed, an error will be returned instead.
-	TraverseAround(ctx context.Context, slot uint, interval uint) (*MintedBlock, error)
+	TraverseAround(ctx context.Context, slot uint,
+		interval uint) (*MintedBlock, error)
 }

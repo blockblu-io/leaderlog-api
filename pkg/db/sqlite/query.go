@@ -11,10 +11,12 @@ import (
 )
 
 // queryAndScanLeaderLogIDs queries for assigned blocks with the specified query
-// and scans the result set. If the scanning has been successful, then an array of
-// leader log IDs is returned. Otherwise, an error will be returned, if the querying
-// or the scanning fails.
-func (l *SQLiteDB) queryAndScanLeaderLogIDs(ctx context.Context, query string, args ...interface{}) ([]uint, error) {
+// and scans the result set. If the scanning has been successful, then an array
+// of leader log IDs is returned. Otherwise, an error will be returned, if the
+// querying or the scanning fails.
+func (l *SQLiteDB) queryAndScanLeaderLogIDs(ctx context.Context, query string,
+	args ...interface{}) ([]uint, error) {
+
 	rows, err := l.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -32,7 +34,9 @@ func (l *SQLiteDB) queryAndScanLeaderLogIDs(ctx context.Context, query string, a
 	return epochs, err
 }
 
-func (l *SQLiteDB) GetRegisteredEpochs(ctx context.Context, ordering db.Ordering, limit uint) ([]uint, error) {
+func (l *SQLiteDB) GetRegisteredEpochs(ctx context.Context,
+	ordering db.Ordering, limit uint) ([]uint, error) {
+
 	orderingString := "ASC"
 	if ordering == db.OrderingDesc {
 		orderingString = "DESC"
@@ -46,12 +50,13 @@ func (l *SQLiteDB) GetRegisteredEpochs(ctx context.Context, ordering db.Ordering
 	return ids, nil
 }
 
-// queryAndScanAssignedBlocksWithMintedBlock queries for assigned blocks with the
-// specified query and scans the result set. If the scanning has been successful,
-// then an array of assigned blocks is returned. Otherwise, an error will be
-// returned, if the querying or the scanning fails.
-func (l *SQLiteDB) queryAndScanAssignedBlocksWithMintedBlock(ctx context.Context, query string,
-	args ...interface{}) ([]db.AssignedBlock, error) {
+// queryAndScanAssignedBlocksWithMintedBlock queries for assigned blocks with
+// the specified query and scans the result set. If the scanning has been
+// successful, then an array of assigned blocks is returned. Otherwise, an error
+// will be returned, if the querying or the scanning fails.
+func (l *SQLiteDB) queryAndScanAssignedBlocksWithMintedBlock(ctx context.Context,
+	query string, args ...interface{}) ([]db.AssignedBlock, error) {
+
 	rows, err := l.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -63,8 +68,9 @@ func (l *SQLiteDB) queryAndScanAssignedBlocksWithMintedBlock(ctx context.Context
 		var unixTimestamp int64
 		var id, epoch, epochSlot, slot, height sql.NullInt64
 		var hash, poolID sql.NullString
-		err = rows.Scan(&block.Epoch, &block.No, &block.Slot, &block.EpochSlot, &unixTimestamp, &block.Status,
-			&id, &epoch, &epochSlot, &slot, &hash, &height, &poolID)
+		err = rows.Scan(&block.Epoch, &block.No, &block.Slot, &block.EpochSlot,
+			&unixTimestamp, &block.Status, &id, &epoch, &epochSlot, &slot,
+			&hash, &height, &poolID)
 		if err != nil {
 			return nil, err
 		}
@@ -90,12 +96,13 @@ func (l *SQLiteDB) queryAndScanAssignedBlocksWithMintedBlock(ctx context.Context
 	return blocks, nil
 }
 
-// queryAndScanAssignedBlocks queries for assigned blocks with the specified query
-// and scans the result set. If the scanning has been successful, then an array of
-// assigned blocks is returned. Otherwise, an error will be returned, if the querying
-// or the scanning fails.
+// queryAndScanAssignedBlocks queries for assigned blocks with the specified
+// query and scans the result set. If the scanning has been successful, then an
+// array of assigned blocks is returned. Otherwise, an error will be returned,
+// if the querying or the scanning fails.
 func (l *SQLiteDB) queryAndScanAssignedBlocks(ctx context.Context, query string,
 	args ...interface{}) ([]db.AssignedBlock, error) {
+
 	rows, err := l.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -105,7 +112,8 @@ func (l *SQLiteDB) queryAndScanAssignedBlocks(ctx context.Context, query string,
 	for rows.Next() {
 		block := db.AssignedBlock{}
 		var unixTimestamp int64
-		err = rows.Scan(&block.Epoch, &block.No, &block.Slot, &block.EpochSlot, &unixTimestamp, &block.Status)
+		err = rows.Scan(&block.Epoch, &block.No, &block.Slot, &block.EpochSlot,
+			&unixTimestamp, &block.Status)
 		if err != nil {
 			return nil, err
 		}
@@ -115,10 +123,13 @@ func (l *SQLiteDB) queryAndScanAssignedBlocks(ctx context.Context, query string,
 	return blocks, nil
 }
 
-// queryAndScanLeaderLogs queries for a specific leaderlog with the given query and scans the
-// result set for one entry. If the scanning has been succefuly, this one leader log will be
-// returned. Otherwise, an error will be returned, if the scanning or querying failed.
-func (l *SQLiteDB) queryAndScanLeaderLogs(ctx context.Context, q string, args ...interface{}) (*db.LeaderLog, error) {
+// queryAndScanLeaderLogs queries for a specific leaderlog with the given query
+// and scans the  result set for one entry. If the scanning has been
+// successfully, this one leader log will be returned. Otherwise, an error will
+// be returned, if the scanning or querying failed.
+func (l *SQLiteDB) queryAndScanLeaderLogs(ctx context.Context, q string,
+	args ...interface{}) (*db.LeaderLog, error) {
+
 	logRows, err := l.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
@@ -127,8 +138,8 @@ func (l *SQLiteDB) queryAndScanLeaderLogs(ctx context.Context, q string, args ..
 	var leaderLog *db.LeaderLog
 	if logRows.Next() {
 		leaderLog = &db.LeaderLog{}
-		err = logRows.Scan(&leaderLog.Epoch, &leaderLog.PoolID, &leaderLog.ExpectedBlockNumber,
-			&leaderLog.MaxPerformance)
+		err = logRows.Scan(&leaderLog.Epoch, &leaderLog.PoolID,
+			&leaderLog.ExpectedBlockNumber, &leaderLog.MaxPerformance)
 		if err != nil {
 			return nil, err
 		}
@@ -136,11 +147,15 @@ func (l *SQLiteDB) queryAndScanLeaderLogs(ctx context.Context, q string, args ..
 	return leaderLog, nil
 }
 
-func (l *SQLiteDB) GetLeaderLog(ctx context.Context, epoch uint) (*db.LeaderLog, error) {
-	leaderLog, err := l.queryAndScanLeaderLogs(ctx,
-		`SELECT epoch, poolID, expectedBlockNr, maxPerformance FROM LeaderLog WHERE epoch = ?;`, epoch)
+func (l *SQLiteDB) GetLeaderLog(ctx context.Context,
+	epoch uint) (*db.LeaderLog, error) {
+
+	leaderLog, err := l.queryAndScanLeaderLogs(ctx, `
+SELECT epoch, poolID, expectedBlockNr, maxPerformance FROM LeaderLog WHERE epoch = ?;
+`, epoch)
 	if err != nil {
-		log.Errorf("querying the leaderlog of epoch=%d failed: %s", epoch, err.Error())
+		log.Errorf("querying the leaderlog of epoch=%d failed: %s",
+			epoch, err.Error())
 		return nil, db.ReadError
 	}
 	if leaderLog != nil {
@@ -150,7 +165,8 @@ WHERE epoch = ?
 ORDER BY no ASC;
 `, epoch)
 		if err != nil {
-			log.Errorf("querying the blocks for leaderlog of epoch=%d failed: %s", leaderLog.Epoch, err.Error())
+			log.Errorf("querying the blocks for leaderlog of epoch=%d failed: %s",
+				leaderLog.Epoch, err.Error())
 			return nil, db.ReadError
 		}
 		leaderLog.Blocks = blocks
@@ -166,13 +182,16 @@ WHERE timestamp > ?
 ORDER BY no ASC;
 `, now.Unix())
 	if err != nil {
-		log.Errorf("querying the blocks after now=%v failed: %s", now, err.Error())
+		log.Errorf("querying the blocks after now=%v failed: %s",
+			now, err.Error())
 		return nil, db.ReadError
 	}
 	return blocks, nil
 }
 
-func (l *SQLiteDB) GetAssignedBlocksBeforeNow(ctx context.Context, epoch uint) ([]db.AssignedBlock, error) {
+func (l *SQLiteDB) GetAssignedBlocksBeforeNow(ctx context.Context,
+	epoch uint) ([]db.AssignedBlock, error) {
+
 	now := time.Now()
 	blocks, err := l.queryAndScanAssignedBlocksWithMintedBlock(ctx, `
 SELECT a.epoch, a.no, a.slotNr, a.slotInEpochNr, a.timestamp, a.status, m.id, m.epoch, m.slotNr, m.slotInEpochNr,
@@ -182,14 +201,16 @@ WHERE a.epoch = ? and a.timestamp <= ?
 ORDER BY no ASC;
 `, epoch, now.Unix())
 	if err != nil {
-		log.Errorf("querying the blocks of epoch=%d before now=%v failed: %s", epoch, now, err.Error())
+		log.Errorf("querying the blocks of epoch=%d before now=%v failed: %s",
+			epoch, now, err.Error())
 		return nil, db.ReadError
 	}
 	return blocks, nil
 }
 
-func (l *SQLiteDB) GetAssignedBlocksWithStatusBeforeNow(ctx context.Context, status db.BlockStatus,
-	offset, limit uint) ([]db.AssignedBlock, error) {
+func (l *SQLiteDB) GetAssignedBlocksWithStatusBeforeNow(ctx context.Context,
+	status db.BlockStatus, offset, limit uint) ([]db.AssignedBlock, error) {
+
 	now := time.Now()
 	blocks, err := l.queryAndScanAssignedBlocks(ctx, `
 SELECT epoch, no, slotNr, slotInEpochNr, timestamp, status FROM AssignedBlock
@@ -199,8 +220,8 @@ LIMIT ?
 OFFSET ?;
 `, now.Unix(), status, limit, offset)
 	if err != nil {
-		log.Errorf("querying the blocks (%d,%d) with status=%d before now=%v failed: %s", offset, limit, status,
-			now, err.Error())
+		log.Errorf("querying the blocks (%d,%d) with status=%d before now=%v failed: %s",
+			offset, limit, status, now, err.Error())
 		return nil, db.ReadError
 	}
 	return blocks, nil

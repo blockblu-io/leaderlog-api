@@ -9,8 +9,8 @@ import (
 // fetchPoolMetadataFunc is a function to fetch pool metadata
 type fetchPoolMetadataFunc func(context.Context, string) (*chain.StakePool, error)
 
-// poolCache allows fetching pool metadata by making use of a
-// cache. The cache stores a specified number of pool metadata.
+// poolCache allows fetching pool metadata by making use of a cache. The cache
+// stores a specified number of pool metadata.
 type poolCache struct {
 	size        int
 	latestPools []string
@@ -28,9 +28,8 @@ func newPoolCache(cacheSize int) poolCache {
 	}
 }
 
-// registerPool registers the given pool ID into the cache. Old
-// entries of the cache might be deleted depending on the size
-// of the cache.
+// registerPool registers the given pool ID into the cache. Old entries of the
+// cache might be deleted depending on the size of the cache.
 func (p *poolCache) registerPool(poolID string) {
 	cleanList := make([]string, 0)
 	for _, pID := range p.latestPools {

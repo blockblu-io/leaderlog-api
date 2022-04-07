@@ -15,9 +15,9 @@ type SQLiteDB struct {
 	obv *db.Observer
 }
 
-// NewSQLiteDB opens a new SQLite database. This method should only
-// be called once. It returns an DB instance with which the database
-// can be queried, or an error, if opening the database has failed.
+// NewSQLiteDB opens a new SQLite database. This method should only be called
+// once. It returns an DB instance with which the database can be queried, or an
+// error, if opening the database has failed.
 func NewSQLiteDB(path string) (db.DB, error) {
 	dbFilePath := filepath.Join(path, "sql.db")
 	needsToBeInitialized, err := prepareFile(dbFilePath)
@@ -40,13 +40,11 @@ func NewSQLiteDB(path string) (db.DB, error) {
 	}, nil
 }
 
-// prepareFile prepares the database file for sqlite such
-// that it can be properly used and accessed. This method
-// returns a boolean indicating whether the database file
-// was newly created and hence, needs to be initialized or
-// not. "True" will be returned, if it needs to be
-// initialized. An error will be instead returned, if the
-// path cannot be prepared for SQLite for some reason.
+// prepareFile prepares the database file for sqlite such that it can be
+// properly used and accessed. This method returns a boolean indicating whether
+// the database file was newly created and hence, needs to be initialized or
+// not. "True" will be returned, if it needs to be initialized. An error will be
+// instead returned, if the path cannot be prepared for SQLite for some reason.
 func prepareFile(dbFilePath string) (bool, error) {
 	err := os.MkdirAll(filepath.Dir(dbFilePath), 0755)
 	if err != nil {

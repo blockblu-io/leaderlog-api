@@ -11,9 +11,8 @@ import (
 
 const RootPath = "leaderlog"
 
-// getPath assembles the path for api calls given the relative path.
-// This functions returns the complete path that can be passed to the
-// gin framework.
+// getPath assembles the path for api calls given the relative path. This
+// functions returns the complete path that can be passed to the gin framework.
 func getPath(relativePath string) string {
 	return fmt.Sprintf("%s/%s", RootPath, relativePath)
 }

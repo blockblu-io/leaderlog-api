@@ -8,8 +8,8 @@ import (
 	"os"
 )
 
-// Backend is an implementation of chain.Backend that makes use
-// of the Blockfrost API.
+// Backend is an implementation of chain.Backend that makes use of the
+// Blockfrost API.
 type Backend struct {
 	client blockfrost.APIClient
 	cache  poolCache
