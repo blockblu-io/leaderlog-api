@@ -70,6 +70,7 @@ func (sc *Scanner) lookForNextBlock(ctx context.Context, nChan chan struct{}) {
 	if wait < 0 {
 		wait = 10 * time.Second
 	}
+	log.Infof("waiting %s for the next block", wait)
 	timer := time.NewTimer(wait)
 	select {
 	case <-timer.C:
