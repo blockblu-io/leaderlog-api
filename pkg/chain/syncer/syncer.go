@@ -56,6 +56,8 @@ func (s *Syncer) Run(ctx context.Context) {
 func (s *Syncer) processBlock(ctx context.Context, block db.AssignedBlock) {
 	log.Infof("processing block at (%d,%d) with no=%d for pool-id=%s",
 		block.Epoch, block.EpochSlot, block.No, s.poolID)
+	sub := s.tipUpdater.Subscribe()
+	defer sub.Unsubscribe()
 	for {
 		tip := s.tipUpdater.GetTip()
 		if tip != nil {
@@ -65,7 +67,7 @@ func (s *Syncer) processBlock(ctx context.Context, block db.AssignedBlock) {
 			}
 		}
 		select {
-		case <-s.tipUpdater.UpdateC:
+		case <-sub.C:
 			break
 		case <-ctx.Done():
 			return
