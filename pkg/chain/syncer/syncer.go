@@ -89,6 +89,9 @@ func (s *Syncer) processBlock(ctx context.Context, block db.AssignedBlock) {
 	if err != nil {
 		log.Errorf("couldn't update the status for block (%d,%d): %s",
 			block.Epoch, block.No, err.Error())
+	} else {
+		log.Infof("updated the status of block (%d,%d) to %d",
+			block.Epoch, block.No, status)
 	}
 }
 

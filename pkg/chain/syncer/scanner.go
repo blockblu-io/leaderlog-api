@@ -32,7 +32,7 @@ func (s *Syncer) NewScanner() *Scanner {
 func (sc *Scanner) Run(ctx context.Context) {
 	sc.scanPastBlocks(ctx)
 	keepOn := true
-	nextBlockChan := make(chan struct{})
+	nextBlockChan := make(chan db.AssignedBlock)
 	lookCtx, cancel := context.WithCancel(ctx)
 	go sc.lookForNextBlock(lookCtx, nextBlockChan)
 	for keepOn {
@@ -45,8 +45,14 @@ func (sc *Scanner) Run(ctx context.Context) {
 				go sc.lookForNextBlock(lookCtx, nextBlockChan)
 			}
 			break
-		case <-nextBlockChan:
-			go sc.scanPastBlocks(ctx)
+		case block := <-nextBlockChan:
+			go func() {
+				block.Timestamp = time.Now()
+				sc.syncer.pastBlockChan <- block
+			}()
+			cancel()
+			lookCtx, cancel = context.WithCancel(ctx)
+			go sc.lookForNextBlock(lookCtx, nextBlockChan)
 			break
 		case <-ctx.Done():
 			keepOn = false
@@ -55,7 +61,9 @@ func (sc *Scanner) Run(ctx context.Context) {
 	cancel()
 }
 
-func (sc *Scanner) lookForNextBlock(ctx context.Context, nChan chan struct{}) {
+func (sc *Scanner) lookForNextBlock(ctx context.Context,
+	nChan chan db.AssignedBlock) {
+
 	blocks, err := sc.syncer.db.GetAssignedBlocksAfterNow(ctx)
 	if err != nil {
 		log.Errorf("couldn't scan the unsynced blcoks: %s",
@@ -68,13 +76,14 @@ func (sc *Scanner) lookForNextBlock(ctx context.Context, nChan chan struct{}) {
 	}
 	wait := blocks[0].Timestamp.Sub(time.Now())
 	if wait < 0 {
-		wait = 10 * time.Second
+		wait = 0
 	}
+	wait = wait + 10*time.Second
 	log.Infof("waiting %s for the next block", wait)
 	timer := time.NewTimer(wait)
 	select {
 	case <-timer.C:
-		nChan <- struct{}{}
+		nChan <- blocks[0]
 	case <-ctx.Done():
 		close(nChan)
 		break
