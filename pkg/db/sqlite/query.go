@@ -162,7 +162,7 @@ SELECT epoch, poolID, expectedBlockNr, maxPerformance FROM LeaderLog WHERE epoch
 		blocks, err := l.queryAndScanAssignedBlocks(ctx, `
 SELECT epoch, no, slotNr, slotInEpochNr, timestamp, status FROM AssignedBlock
 WHERE epoch = ?
-ORDER BY no ASC;
+ORDER BY timestamp ASC;
 `, epoch)
 		if err != nil {
 			log.Errorf("querying the blocks for leaderlog of epoch=%d failed: %s",
@@ -179,7 +179,7 @@ func (l *SQLiteDB) GetAssignedBlocksAfterNow(ctx context.Context) ([]db.Assigned
 	blocks, err := l.queryAndScanAssignedBlocks(ctx, `
 SELECT epoch, no, slotNr, slotInEpochNr, timestamp, status FROM AssignedBlock
 WHERE timestamp > ?
-ORDER BY no ASC;
+ORDER BY timestamp ASC;
 `, now.Unix())
 	if err != nil {
 		log.Errorf("querying the blocks after now=%v failed: %s",
@@ -198,7 +198,7 @@ SELECT a.epoch, a.no, a.slotNr, a.slotInEpochNr, a.timestamp, a.status, m.id, m.
 	m.hash, m.height, m.poolID
 FROM AssignedBlock a LEFT JOIN MintedBlock m on a.relevant = m.id
 WHERE a.epoch = ? and a.timestamp <= ?
-ORDER BY no ASC;
+ORDER BY a.timestamp ASC;
 `, epoch, now.Unix())
 	if err != nil {
 		log.Errorf("querying the blocks of epoch=%d before now=%v failed: %s",
