@@ -54,6 +54,8 @@ func (s *Syncer) Run(ctx context.Context) {
 // processBlock gathers the status of the assigned block and updates the status
 // in the database.
 func (s *Syncer) processBlock(ctx context.Context, block db.AssignedBlock) {
+	log.Infof("processing block at (%d,%d) with no=%d for pool-id=%s",
+		block.Epoch, block.EpochSlot, block.No, s.poolID)
 	for {
 		tip := s.tipUpdater.GetTip()
 		if tip != nil {
@@ -69,8 +71,6 @@ func (s *Syncer) processBlock(ctx context.Context, block db.AssignedBlock) {
 			return
 		}
 	}
-	log.Infof("processing block at (%d,%d) with no=%d for pool-id=%s",
-		block.Epoch, block.EpochSlot, block.No, s.poolID)
 	status, mintedBlock, err := s.getStatusOfBlock(ctx, block.Slot)
 	if err != nil {
 		return
