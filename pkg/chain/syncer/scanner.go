@@ -29,6 +29,10 @@ func (s *Syncer) NewScanner() *Scanner {
 	}
 }
 
+// Run runs this scanner. It checks for past blocks in the DB that have not
+// yet been updated and waits for the next assigned block being in the past.
+// This method is running infinitely unless the given context has been
+// cancelled.
 func (sc *Scanner) Run(ctx context.Context) {
 	sc.scanPastBlocks(ctx)
 	keepOn := true
@@ -61,6 +65,10 @@ func (sc *Scanner) Run(ctx context.Context) {
 	cancel()
 }
 
+// lookForNextBlock looks for the next assigned block in the DB and then blocks
+// until the next assigned block is in the past or the given context has been
+// canceled. When the next assigned block is in the past, then this block will
+// be pushed to the specified channel.
 func (sc *Scanner) lookForNextBlock(ctx context.Context,
 	nChan chan db.AssignedBlock) {
 
@@ -90,6 +98,8 @@ func (sc *Scanner) lookForNextBlock(ctx context.Context,
 	}
 }
 
+// scanPastBlocks scans for the for past blocks in the DB that have not yet been
+// updated.
 func (sc *Scanner) scanPastBlocks(ctx context.Context) {
 	log.Infof("scanning past blocks that haven't been updated")
 	loaded := false

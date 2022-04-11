@@ -23,7 +23,7 @@ type Syncer struct {
 // format. The given backend is used for querying the chain, and the given db.DB
 // is used to query as well as update the blocks and their status.
 func NewSyncer(poolID string, backend chain.Backend, idb db.DB) *Syncer {
-	tu := NewTipUpdater()
+	tu := NewTipUpdater(DefaultTipUpdaterConfig)
 	blockChannel := make(chan db.AssignedBlock)
 	return &Syncer{
 		poolID:        poolID,
