@@ -38,16 +38,15 @@ type tip struct {
 type observer struct {
 	lock      sync.RWMutex
 	idCounter int
-	listeners []*TipListener
+	listeners []*tipListener
 }
 
-// TipListener offers a channel that signals when the tip has been updated. If
-// the listener will not be used anymore, call the unsubscribe method to free
-// resources.
-type TipListener struct {
-	observer *observer
-	id       int
-	C        chan struct{}
+type CancelFunc = func()
+
+// tipListener offers a channel that signals when the tip has been updated.
+type tipListener struct {
+	id int
+	c  chan<- struct{}
 }
 
 // getObserverID is getting the ID for an observer lister. This method is not
@@ -72,45 +71,64 @@ func NewTipUpdater(config *TipUpdaterConfiguration) *TipUpdater {
 	}
 }
 
-// Subscribe subscribes to notifications about newly fetched tip updates.
-func (tu *TipUpdater) Subscribe() *TipListener {
-	tu.observer.lock.Lock()
-	defer tu.observer.lock.Unlock()
-	c := make(chan struct{})
-	t := &TipListener{
-		observer: &tu.observer,
-		id:       tu.observer.getObserverID(),
-		C:        c,
+// Subscribe subscribes to notifications about newly fetched tip updates. It
+// returns the channel with the notifications, and a functions to cancel the
+// subscription.
+func (tu *TipUpdater) Subscribe() (<-chan struct{}, CancelFunc) {
+	done := make(chan struct{})
+	subChan := make(chan struct{})
+	switchChan := make(chan struct{}, 1)
+	go func() {
+		for {
+			select {
+			case <-switchChan:
+				subChan <- struct{}{}
+				break
+			case <-done:
+				close(switchChan)
+				close(subChan)
+				return
+			}
+		}
+	}()
+	id := tu.observer.newListener(switchChan)
+	return subChan, func() {
+		tu.observer.removeListener(id)
+		done <- struct{}{}
+		close(done)
 	}
-	tu.observer.listeners = append(tu.observer.listeners, t)
-	return t
+}
+
+func (o *observer) newListener(c chan<- struct{}) int {
+	o.lock.Lock()
+	defer o.lock.Unlock()
+	t := &tipListener{
+		id: o.getObserverID(),
+		c:  c,
+	}
+	o.listeners = append(o.listeners, t)
+	return t.id
+}
+
+func (o *observer) removeListener(id int) {
+	o.lock.Lock()
+	defer o.lock.Unlock()
+	listeners := make([]*tipListener, 0)
+	for _, l := range o.listeners {
+		if l.id != id {
+			listeners = append(listeners, l)
+		}
+	}
+	o.listeners = listeners
 }
 
 // notify sends a signal to all the subscribed observers.
-func (tu *TipUpdater) notify() {
-	tu.observer.lock.RLock()
-	defer tu.observer.lock.RUnlock()
-	for _, l := range tu.observer.listeners {
-		go func(l *TipListener) {
-			l.C <- struct{}{}
-		}(l)
+func (o *observer) notify() {
+	o.lock.RLock()
+	defer o.lock.RUnlock()
+	for _, l := range o.listeners {
+		l.c <- struct{}{}
 	}
-}
-
-// Unsubscribe unsubscribes this tip listeners from getting notifications. This
-// method frees resources and shall be called, if this TipListener isn't going
-// to be used anymore.
-func (tpl *TipListener) Unsubscribe() {
-	tpl.observer.lock.Lock()
-	defer tpl.observer.lock.Unlock()
-	var listeners []*TipListener
-	for _, otpl := range tpl.observer.listeners {
-		if tpl.id != otpl.id {
-			listeners = append(listeners, otpl)
-		}
-	}
-	tpl.observer.listeners = listeners
-	close(tpl.C)
 }
 
 // GetTip fetches the last gathered tip from this TipUpdater.
@@ -135,7 +153,7 @@ func (tu *TipUpdater) Run(ctx context.Context, backend chain.Backend) {
 			tu.tip.lock.Lock()
 			defer tu.tip.lock.Unlock()
 			tu.tip.value = tip
-			go tu.notify()
+			go tu.observer.notify()
 		}
 	}
 	go func() {
@@ -151,6 +169,5 @@ func (tu *TipUpdater) Run(ctx context.Context, backend chain.Backend) {
 			}
 			timer.Stop()
 		}
-
 	}()
 }
