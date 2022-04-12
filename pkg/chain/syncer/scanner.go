@@ -51,7 +51,6 @@ func (sc *Scanner) Run(ctx context.Context) {
 			break
 		case block := <-nextBlockChan:
 			go func() {
-				block.Timestamp = time.Now()
 				sc.syncer.pastBlockChan <- block
 			}()
 			cancel()
