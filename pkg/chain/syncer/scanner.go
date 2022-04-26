@@ -34,34 +34,59 @@ func (s *Syncer) NewScanner() *Scanner {
 // This method is running infinitely unless the given context has been
 // cancelled.
 func (sc *Scanner) Run(ctx context.Context) {
+	observe := func() (chan struct{}, context.CancelFunc) {
+		observeChan := make(chan struct{})
+		ctx, cancel := context.WithCancel(ctx)
+		go sc.observeNewLeaderLog(ctx, observeChan)
+		return observeChan, cancel
+	}
+	lookupNext := func() (chan db.AssignedBlock, context.CancelFunc) {
+		nextChan := make(chan db.AssignedBlock)
+		ctx, cancel := context.WithCancel(ctx)
+		go sc.lookForNextBlock(ctx, nextChan)
+		return nextChan, cancel
+	}
 	sc.scanPastBlocks(ctx)
 	keepOn := true
-	nextBlockChan := make(chan db.AssignedBlock)
-	lookCtx, cancel := context.WithCancel(ctx)
-	go sc.lookForNextBlock(lookCtx, nextBlockChan)
 	for keepOn {
+		obvChan, obvCancel := observe()
+		nextBlockChan, nextCancel := lookupNext()
 		select {
-		case msg := <-sc.listener:
-			if msg.Code == db.ObserveNewLeaderLog {
-				go sc.scanPastBlocks(ctx)
-				cancel()
-				lookCtx, cancel = context.WithCancel(ctx)
-				go sc.lookForNextBlock(lookCtx, nextBlockChan)
-			}
+		case <-obvChan:
+			sc.scanPastBlocks(ctx)
 			break
 		case block := <-nextBlockChan:
 			go func() {
 				sc.syncer.pastBlockChan <- block
 			}()
-			cancel()
-			lookCtx, cancel = context.WithCancel(ctx)
-			go sc.lookForNextBlock(lookCtx, nextBlockChan)
 			break
 		case <-ctx.Done():
 			keepOn = false
 		}
+		obvCancel()
+		nextCancel()
 	}
-	cancel()
+}
+
+// observeNewLeaderLog sends a signal to the given channel, when a new leader
+// log has been ingested.
+func (sc *Scanner) observeNewLeaderLog(ctx context.Context,
+	signal chan struct{}) {
+
+	for {
+		select {
+		case msg := <-sc.listener:
+			if msg.Code == db.ObserveNewLeaderLog {
+				signal <- struct{}{}
+				close(signal)
+				return
+			}
+			break
+		case <-ctx.Done():
+			close(signal)
+			return
+		}
+	}
 }
 
 // lookForNextBlock looks for the next assigned block in the DB and then blocks
@@ -91,6 +116,7 @@ func (sc *Scanner) lookForNextBlock(ctx context.Context,
 	select {
 	case <-timer.C:
 		nChan <- blocks[0]
+		close(nChan)
 	case <-ctx.Done():
 		close(nChan)
 		break
